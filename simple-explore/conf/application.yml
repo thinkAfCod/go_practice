@@ -1,0 +1,10 @@
+dataSource:
+  driverName: mysql
+  username: root
+  password: ""
+  domain: 127.0.0.1:3306
+  path: /test?charset=utf8mb4&parseTime=True&loc=Local
+server:
+  host: ""
+  port: 8080
+Other:
