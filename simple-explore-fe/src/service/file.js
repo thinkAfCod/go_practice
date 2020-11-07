@@ -17,6 +17,12 @@ export async function getFileItemPage(page, parentId) {
   return rs || {};
 }
 
+export async function getFileItemParentId(parentId) {
+  const url = `/api/item/parent/id?id=${parentId}`
+  const rs = await get(url);
+  return rs || {};
+}
+
 export function downloadPath(fileId) {
   return `/api/file?id=${fileId}`
 }

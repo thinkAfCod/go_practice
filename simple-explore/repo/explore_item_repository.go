@@ -36,14 +36,14 @@ func (eir *ExploreItemRepository) FindAllByParentId(page *model.PageModel, paren
          FROM explore_item ei,file f
          WHERE ei.file_id = f.id and ei.parent_item_id = ?  LIMIT ? OFFSET ?
     `
-	countsql := `
+	count_sql := `
          SELECT COUNT(*) as count
          FROM explore_item 
          WHERE parent_item_id = ?
     `
 	tx := db.GetWithTx()
 	tx.Raw(sql, parentItemId, page.PageSize, (page.PageNo-1)*page.PageSize).Scan(groups)
-	tx.Raw(countsql, parentItemId).Scan(page)
+	tx.Raw(count_sql, parentItemId).Scan(page)
 	fmt.Println(page)
 	page.PageTotal = page.Count / page.PageSize
 	if page.Count%page.PageSize > 0 {
@@ -51,6 +51,14 @@ func (eir *ExploreItemRepository) FindAllByParentId(page *model.PageModel, paren
 	}
 	page.PageData = groups
 	return *groups, tx.Commit().Error
+}
+
+func (eir *ExploreItemRepository) FindParentIdById(id string) (*model.ExploreFile, error) {
+	sql := `SELECT parent_item_id FROM explore_item WHERE id = ? LIMIT 1`
+	dest := &model.ExploreFile{}
+	tx := db.GetWithTx()
+	tx.Raw(sql, id).Scan(dest)
+	return dest, tx.Commit().Error
 }
 
 func (eir *ExploreItemRepository) deleteByParentId(parentItemId string) error {

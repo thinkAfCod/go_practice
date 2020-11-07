@@ -6,6 +6,7 @@ import (
 	"simple-explore/model"
 	"simple-explore/repo"
 	"strconv"
+	"strings"
 )
 
 type ExploreItemResource struct {
@@ -18,17 +19,40 @@ func init() {
 }
 
 func (eir *ExploreItemResource) Get(ctx iris.Context) {
+	page, parentItemId, name := eir.parseHttpParam(ctx)
+	_, err := exploreRepository.FindAllByParentId(page, parentItemId, name)
+	eir.handleResult(ctx, page, err, err)
+}
+
+func (eir *ExploreItemResource) GetParentId(ctx iris.Context) {
+	id := ctx.URLParamDefault("id", "0")
+	var selectParentId string
+	var parentItem *model.ExploreFile
+	var err error
+	if !strings.EqualFold("0", id) {
+		parentItem, err = exploreRepository.FindParentIdById(id)
+		selectParentId = strconv.FormatInt(parentItem.ParentItemId, 10)
+	} else {
+		selectParentId = id
+	}
+	eir.handleResult(ctx, selectParentId, err, err)
+}
+
+func (eir *ExploreItemResource) handleResult(ctx iris.Context, data interface{}, errMsg interface{}, err error) {
+	if err != nil {
+		ctx.JSON(common.Error(errMsg))
+		return
+	}
+	ctx.JSON(common.Success(data))
+}
+
+func (eir *ExploreItemResource) parseHttpParam(ctx iris.Context) (*model.PageModel, string, string) {
 	page := &model.PageModel{}
 	page.PageSize, _ = strconv.ParseInt(ctx.URLParamDefault("pageSize", "10"), 10, 64)
 	page.PageNo, _ = strconv.ParseInt(ctx.URLParamDefault("pageNo", "1"), 10, 64)
 	parentItemId := ctx.URLParamDefault("parentId", "0")
 	name := ctx.URLParam("name")
-	_, err := exploreRepository.FindAllByParentId(page, parentItemId, name)
-	if err != nil {
-		ctx.JSON(common.Error(err))
-		return
-	}
-	ctx.JSON(common.Success(page))
+	return page, parentItemId, name
 }
 
 func (eir *ExploreItemResource) Post(ctx iris.Context) {
@@ -39,11 +63,7 @@ func (eir *ExploreItemResource) Post(ctx iris.Context) {
 		return
 	}
 	err = exploreRepository.Insert(item)
-	if err != nil {
-		ctx.JSON(common.Error(err))
-		return
-	}
-	ctx.JSON(common.Success(nil))
+	eir.handleResult(ctx, nil, "id is invalid", err)
 }
 
 func (eir *ExploreItemResource) Patch(ctx iris.Context) {
@@ -59,11 +79,7 @@ func (eir *ExploreItemResource) Patch(ctx iris.Context) {
 		return
 	}
 	err = exploreRepository.Update(&item)
-	if err != nil {
-		ctx.JSON(common.Error("id is invalid"))
-		return
-	}
-	ctx.JSON(common.Success(nil))
+	eir.handleResult(ctx, nil, "id is invalid", err)
 }
 
 func (eir *ExploreItemResource) Delete(ctx iris.Context) {
@@ -74,9 +90,5 @@ func (eir *ExploreItemResource) Delete(ctx iris.Context) {
 		return
 	}
 	err := exploreRepository.DeleteById(&model.ExploreItem{}, id)
-	if err != nil {
-		ctx.JSON(common.Error("id is invalid"))
-		return
-	}
-	ctx.JSON(common.Success(nil))
+	eir.handleResult(ctx, nil, "id is invalid", err)
 }
