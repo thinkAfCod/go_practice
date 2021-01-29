@@ -59,3 +59,7 @@ func reflect2() {
 	//如果kind类型是slice或者ptr类型，可以再通过Elem()函数获取相关的struct类型的反射类型数据，之后便可以获取struct中的所有field、method等数据了
 	fmt.Printf("name: %v,fieldCount: %v,kind: %v", typeValue.Name(), typeValue.NumField(), typeValue.Kind())
 }
+
+func main() {
+
+}
