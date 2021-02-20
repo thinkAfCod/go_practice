@@ -138,9 +138,44 @@ func unbuffered_chan() {
 	}()
 
 	wg.Wait()
+	close(unBuffered)
+}
 
+func buffered_chan() {
+	buffered := make(chan string, 3)
+	var mainWg sync.WaitGroup
+	var goroutineWg sync.WaitGroup
+	mainWg.Add(1)
+	goroutineWg.Add(1)
+	runtime.GOMAXPROCS(2)
+	go func() {
+		for i := 0; i < 4; i++ {
+			if i == 3 {
+				time.AfterFunc(10*time.Second, func() {
+					goroutineWg.Done()
+				})
+			}
+			fmt.Printf("第%d次写入channel\n", i+1)
+			buffered <- strconv.Itoa(rand.Int())
+			fmt.Printf("第%d次写入channel，完成\n", i+1)
+		}
+
+	}()
+
+	go func() {
+		defer mainWg.Done()
+		goroutineWg.Wait()
+		for i := 0; i < 4; i++ {
+			read := <-buffered
+			fmt.Println(read)
+		}
+
+	}()
+
+	mainWg.Wait()
+	close(buffered)
 }
 
 func main() {
-	unbuffered_chan()
+	buffered_chan()
 }
