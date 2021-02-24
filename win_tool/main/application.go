@@ -5,6 +5,7 @@ import (
 	. "github.com/lxn/walk/declarative"
 	"log"
 	"strings"
+	"time"
 )
 
 var isSpecialMode = walk.NewMutableCondition()
@@ -44,6 +45,8 @@ func NewFileToolTabPage() TabPage {
 	var fileMoveButton *walk.PushButton
 	var fileDropText *walk.TextEdit
 	var filePath string
+	fileDropChan := make(chan int)
+	fileDropActionChan := make(chan int, 1)
 	return TabPage{
 		AssignTo: &tab,
 		Title:    "文件",
@@ -59,7 +62,23 @@ func NewFileToolTabPage() TabPage {
 							filePath = fileDropText.Text()
 						},
 						OnDropFiles: func(files []string) {
-							fileDropText.SetText(strings.Join(files, ";"))
+							if len(fileDropActionChan) == 0 {
+								fileDropActionChan <- 1
+							} else {
+								return
+							}
+							filePath := strings.Join(files, ";")
+							fileDropText.SetText(filePath + "即将开始转移")
+							go func() {
+								fileDropText.SetText(filePath + "正在移动")
+								time.Sleep(2 * time.Second)
+								<-fileDropActionChan
+								fileDropChan <- 1
+							}()
+							go func() {
+								<-fileDropChan
+								fileDropText.SetText(filePath + " 移动完成!")
+							}()
 						},
 					},
 					PushButton{
@@ -83,3 +102,7 @@ func NewFileToolTabPage() TabPage {
 		},
 	}
 }
+
+//func MoveFile(te *walk.TextEdit) {
+//
+//}
